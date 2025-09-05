@@ -23,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Convert form.parse to Promise
-    const [fields, files] = await new Promise((resolve, reject) => {
+    const [fields, files] = await new Promise<[any, any]>((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
         if (err) reject(err);
         resolve([fields, files]);
