@@ -148,7 +148,7 @@ const HomePage: React.FC = () => {
     const formData = new FormData();
     formData.append('file', audioBlob, 'interviewer_audio.webm');
     try {
-      const res = await fetch('http://localhost:8000/process-interviewer-audio/', {
+      const res = await fetch('https://aibotastra-backend.onrender.com/process-interviewer-audio/', {
         method: 'POST',
         body: formData,
       });
