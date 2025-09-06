@@ -9,7 +9,7 @@ export const config = {
   },
 };
 
-const backendUrl = 'http://localhost:8000/upload-voice-sample/';
+const backendUrl = 'http://localhost:3000/upload-voice-sample/';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {

@@ -4,6 +4,8 @@ import uvicorn
 import os
 import openai
 import asyncio
+from databases import Database
+from fastapi import HTTPException
 
 app = FastAPI()
 
@@ -19,13 +21,39 @@ app.add_middleware(
 # Load OpenAI API key from environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# Database URL from environment variable
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+database = Database(DATABASE_URL)
+
+@app.on_event("startup")
+async def startup():
+    await database.connect()
+
+@app.on_event("shutdown")
+async def shutdown():
+    await database.disconnect()
+
+# Create table if not exists (run once)
+async def create_table():
+    query = """
+    CREATE TABLE IF NOT EXISTS voice_samples (
+        id SERIAL PRIMARY KEY,
+        sample BYTEA NOT NULL
+    );
+    """
+    await database.execute(query)
+
 @app.post("/upload-voice-sample/")
 async def upload_voice_sample(file: UploadFile = File(...)):
-    # Save the voice sample file for similarity search
     contents = await file.read()
-    with open("voice_sample.webm", "wb") as f:
-        f.write(contents)
-    return {"message": "Voice sample saved"}
+    try:
+        await create_table()
+        query = "INSERT INTO voice_samples (sample) VALUES (:sample)"
+        await database.execute(query, values={"sample": contents})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    return {"message": "Voice sample saved in database"}
 
 @app.post("/process-interviewer-audio/")
 async def process_interviewer_audio(file: UploadFile = File(...)):
