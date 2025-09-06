@@ -12,7 +12,7 @@ app = FastAPI()
 # Allow CORS for frontend running on Render or localhost (adjust origin as needed)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For production, specify your frontend URL
+    allow_origins=["https://aibotastra.onrender.com"],  # Your frontend URL on Render
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
