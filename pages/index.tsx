@@ -90,12 +90,14 @@ const HomePage: React.FC = () => {
     }
   }, [loggedIn, voiceSample, sampling]);
 
-  // Start or stop recording conversation
+  // Start or stop recording conversation and process audio in chunks with pause detection
   const toggleRecording = () => {
     if (recording) {
       // Stop recording
       mediaRecorderRef.current?.stop();
       setRecording(false);
+      clearInterval(pauseCheckInterval.current);
+      pauseCheckInterval.current = null;
     } else {
       // Start recording
       navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
@@ -104,18 +106,43 @@ const HomePage: React.FC = () => {
         audioChunksRef.current = [];
         recorder.ondataavailable = e => {
           audioChunksRef.current.push(e.data);
+          // Process audio chunk immediately for real-time behavior
+          processAudioChunk(e.data);
         };
         recorder.onstop = () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          // Here you would send audioBlob to backend for processing
-          // For now, we mock LLM response
-          processInterviewerAudio(audioBlob);
+          // Process any remaining audio chunks
+          if (audioChunksRef.current.length > 0) {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            processInterviewerAudio(audioBlob);
+            audioChunksRef.current = [];
+          }
           stream.getTracks().forEach(track => track.stop());
         };
         recorder.start();
+
+        // Start interval to check for 3-second pause
+        pauseCheckInterval.current = setInterval(() => {
+          if (Date.now() - lastAudioChunkTime.current > 3000 && audioChunksRef.current.length > 0) {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            processInterviewerAudio(audioBlob);
+            audioChunksRef.current = [];
+          }
+        }, 1000);
+
         setRecording(true);
       });
     }
+  };
+
+  // Track last audio chunk time for pause detection
+  const lastAudioChunkTime = React.useRef(Date.now());
+  const pauseCheckInterval = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Process audio chunk and update last audio chunk time
+  const processAudioChunk = (chunk: Blob) => {
+    lastAudioChunkTime.current = Date.now();
+    // You can implement filtering here if needed before sending
+    // For now, just accumulate chunks and send on pause
   };
 
   // Function to send voice sample to backend
