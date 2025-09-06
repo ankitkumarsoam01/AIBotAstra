@@ -123,7 +123,7 @@ const HomePage: React.FC = () => {
     const formData = new FormData();
     formData.append('file', sample, 'voice_sample.webm');
     try {
-      const res = await fetch('/api/upload-voice-sample', {
+      const res = await fetch('https://aibotastra-backend.onrender.com/upload-voice-sample/)', {
         method: 'POST',
         body: formData,
       });
