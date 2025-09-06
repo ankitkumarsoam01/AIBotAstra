@@ -92,12 +92,14 @@ const HomePage: React.FC = () => {
 
   // Start or stop recording conversation and process audio in chunks with pause detection
   const toggleRecording = () => {
+    console.log("Toggling recording. Current state:", recording);
     if (recording) {
       // Stop recording
       mediaRecorderRef.current?.stop();
       setRecording(false);
       clearInterval(pauseCheckInterval.current);
       pauseCheckInterval.current = null;
+      console.log("Recording stopped.");
     } else {
       // Start recording
       navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
@@ -106,10 +108,12 @@ const HomePage: React.FC = () => {
         audioChunksRef.current = [];
         recorder.ondataavailable = e => {
           audioChunksRef.current.push(e.data);
+          console.log("Audio chunk received, size:", e.data.size);
           // Process audio chunk immediately for real-time behavior
           processAudioChunk(e.data);
         };
         recorder.onstop = () => {
+          console.log("Recorder stopped. Processing remaining audio chunks.");
           // Process any remaining audio chunks
           if (audioChunksRef.current.length > 0) {
             const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
@@ -119,10 +123,12 @@ const HomePage: React.FC = () => {
           stream.getTracks().forEach(track => track.stop());
         };
         recorder.start();
+        console.log("Recording started.");
 
         // Start interval to check for 3-second pause
         pauseCheckInterval.current = setInterval(() => {
           if (Date.now() - lastAudioChunkTime.current > 3000 && audioChunksRef.current.length > 0) {
+            console.log("3-second pause detected. Sending audio to backend.");
             const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
             processInterviewerAudio(audioBlob);
             audioChunksRef.current = [];
